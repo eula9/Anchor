@@ -13,6 +13,9 @@ object Constants {
     const val KEY_NOTIFICATION_HOUR = "notification_hour"
     const val KEY_NOTIFICATION_MINUTE = "notification_minute"
     const val KEY_THEME_MODE = "theme_mode"
+    const val KEY_STREAK_COUNT = "streak_count"
+    const val KEY_LONGEST_STREAK = "longest_streak"
+    const val KEY_LAST_ACTIVE_DATE = "last_active_date"
 
     const val MAX_DAILY_TASKS = 3
 
@@ -26,7 +29,7 @@ object Constants {
     const val DEFAULT_NOTIFICATION_MINUTE = 0
 
     /** 备份文件格式版本 */
-    const val BACKUP_VERSION = 1
+    const val BACKUP_VERSION = 2
 
     /** 备份文件 MIME 类型 */
     const val BACKUP_MIME_TYPE = "application/json"

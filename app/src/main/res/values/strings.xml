@@ -8,6 +8,13 @@
     <string name="identity_card_title">今日身份</string>
     <string name="identity_loading">加载中…</string>
 
+    <!-- 连续行动天数 -->
+    <string name="streak_card_title">连续行动</string>
+    <string name="streak_status_done_today">今日已行动，继续保持</string>
+    <string name="streak_status_keep_going">完成一件事，延续连续记录</string>
+    <string name="streak_status_start">完成一件事，开始记录</string>
+    <string name="streak_longest_record">最长记录 %1$d 天</string>
+
     <!-- 今日三件事 -->
     <string name="daily_tasks_title">今日三件事</string>
     <string name="task_input_hint">添加一件事…</string>

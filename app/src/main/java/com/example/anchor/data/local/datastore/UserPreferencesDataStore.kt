@@ -32,10 +32,19 @@ class UserPreferencesDataStore(context: Context) {
     private val notificationHourKey = intPreferencesKey(Constants.KEY_NOTIFICATION_HOUR)
     private val notificationMinuteKey = intPreferencesKey(Constants.KEY_NOTIFICATION_MINUTE)
     private val themeModeKey = stringPreferencesKey(Constants.KEY_THEME_MODE)
+    private val streakCountKey = intPreferencesKey(Constants.KEY_STREAK_COUNT)
+    private val longestStreakKey = intPreferencesKey(Constants.KEY_LONGEST_STREAK)
+    private val lastActiveDateKey = stringPreferencesKey(Constants.KEY_LAST_ACTIVE_DATE)
 
     data class IdentityPreferences(
         val date: String?,
         val index: Int?,
+    )
+
+    data class StreakPreferences(
+        val currentStreak: Int,
+        val longestStreak: Int,
+        val lastActiveDate: String?,
     )
 
     data class AppPreferences(
@@ -45,6 +54,9 @@ class UserPreferencesDataStore(context: Context) {
         val notificationHour: Int,
         val notificationMinute: Int,
         val themeMode: ThemeMode,
+        val currentStreak: Int = 0,
+        val longestStreak: Int = 0,
+        val lastActiveDate: String? = null,
     )
 
     val identityPreferencesFlow: Flow<IdentityPreferences> = dataStore.data.map { preferences ->
@@ -67,6 +79,14 @@ class UserPreferencesDataStore(context: Context) {
 
     val themeModeFlow: Flow<ThemeMode> = dataStore.data.map { preferences ->
         ThemeMode.fromString(preferences[themeModeKey])
+    }
+
+    val streakPreferencesFlow: Flow<StreakPreferences> = dataStore.data.map { preferences ->
+        StreakPreferences(
+            currentStreak = preferences[streakCountKey] ?: 0,
+            longestStreak = preferences[longestStreakKey] ?: 0,
+            lastActiveDate = preferences[lastActiveDateKey],
+        )
     }
 
     suspend fun saveTodayIdentity(date: String, index: Int) {
@@ -111,6 +131,31 @@ class UserPreferencesDataStore(context: Context) {
         return ThemeMode.fromString(dataStore.data.first()[themeModeKey])
     }
 
+    suspend fun getStreakPreferences(): StreakPreferences {
+        val preferences = dataStore.data.first()
+        return StreakPreferences(
+            currentStreak = preferences[streakCountKey] ?: 0,
+            longestStreak = preferences[longestStreakKey] ?: 0,
+            lastActiveDate = preferences[lastActiveDateKey],
+        )
+    }
+
+    suspend fun saveStreakPreferences(
+        currentStreak: Int,
+        longestStreak: Int,
+        lastActiveDate: String?,
+    ) {
+        dataStore.edit { preferences ->
+            preferences[streakCountKey] = currentStreak
+            preferences[longestStreakKey] = longestStreak
+            if (lastActiveDate != null) {
+                preferences[lastActiveDateKey] = lastActiveDate
+            } else {
+                preferences.remove(lastActiveDateKey)
+            }
+        }
+    }
+
     /** 读取全部偏好（供备份导出） */
     suspend fun getAppPreferences(): AppPreferences {
         val preferences = dataStore.data.first()
@@ -121,6 +166,9 @@ class UserPreferencesDataStore(context: Context) {
             notificationHour = preferences[notificationHourKey] ?: Constants.DEFAULT_NOTIFICATION_HOUR,
             notificationMinute = preferences[notificationMinuteKey] ?: Constants.DEFAULT_NOTIFICATION_MINUTE,
             themeMode = ThemeMode.fromString(preferences[themeModeKey]),
+            currentStreak = preferences[streakCountKey] ?: 0,
+            longestStreak = preferences[longestStreakKey] ?: 0,
+            lastActiveDate = preferences[lastActiveDateKey],
         )
     }
 
@@ -133,6 +181,13 @@ class UserPreferencesDataStore(context: Context) {
             prefs[notificationHourKey] = preferences.notificationHour
             prefs[notificationMinuteKey] = preferences.notificationMinute
             prefs[themeModeKey] = preferences.themeMode.name
+            prefs[streakCountKey] = preferences.currentStreak
+            prefs[longestStreakKey] = preferences.longestStreak
+            if (preferences.lastActiveDate != null) {
+                prefs[lastActiveDateKey] = preferences.lastActiveDate
+            } else {
+                prefs.remove(lastActiveDateKey)
+            }
         }
     }
 }

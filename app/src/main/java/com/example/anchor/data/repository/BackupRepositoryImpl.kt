@@ -41,6 +41,9 @@ class BackupRepositoryImpl(
                 notificationHour = prefs.notificationHour,
                 notificationMinute = prefs.notificationMinute,
                 themeMode = prefs.themeMode.name,
+                currentStreak = prefs.currentStreak,
+                longestStreak = prefs.longestStreak,
+                lastActiveDate = prefs.lastActiveDate,
                 tasks = tasks.map { entity ->
                     BackupTask(
                         content = entity.content,
@@ -73,6 +76,9 @@ class BackupRepositoryImpl(
                     notificationHour = backup.notificationHour,
                     notificationMinute = backup.notificationMinute,
                     themeMode = ThemeMode.fromString(backup.themeMode),
+                    currentStreak = backup.currentStreak,
+                    longestStreak = backup.longestStreak,
+                    lastActiveDate = backup.lastActiveDate,
                 ),
             )
 

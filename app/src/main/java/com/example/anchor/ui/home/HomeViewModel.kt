@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.anchor.data.repository.EmptyTaskContentException
 import com.example.anchor.data.repository.TaskLimitReachedException
 import com.example.anchor.domain.repository.IdentityRepository
+import com.example.anchor.domain.repository.StreakRepository
 import com.example.anchor.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,14 +19,17 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     private val identityRepository: IdentityRepository,
     private val taskRepository: TaskRepository,
+    private val streakRepository: StreakRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch { streakRepository.refreshDayBoundary() }
         observeTodayIdentity()
         observeTodayTasks()
+        observeStreakInfo()
     }
 
     fun onTaskInputChange(text: String) {
@@ -52,6 +56,9 @@ class HomeViewModel(
     fun toggleTaskComplete(taskId: Long, completed: Boolean) {
         viewModelScope.launch {
             taskRepository.setTaskCompleted(taskId, completed)
+            if (completed) {
+                streakRepository.markActionToday()
+            }
         }
     }
 
@@ -69,6 +76,17 @@ class HomeViewModel(
         viewModelScope.launch {
             taskRepository.todayTasks.collect { tasks ->
                 _uiState.update { it.copy(todayTasks = tasks, taskError = null) }
+                if (tasks.any { it.completed }) {
+                    streakRepository.markActionToday()
+                }
+            }
+        }
+    }
+
+    private fun observeStreakInfo() {
+        viewModelScope.launch {
+            streakRepository.streakInfo.collect { streakInfo ->
+                _uiState.update { it.copy(streakInfo = streakInfo) }
             }
         }
     }

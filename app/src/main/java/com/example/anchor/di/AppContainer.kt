@@ -10,11 +10,13 @@ import com.example.anchor.data.repository.BackupRepositoryImpl
 import com.example.anchor.data.repository.IdentityRepositoryImpl
 import com.example.anchor.data.repository.NotificationRepositoryImpl
 import com.example.anchor.data.repository.SettingsRepositoryImpl
+import com.example.anchor.data.repository.StreakRepositoryImpl
 import com.example.anchor.data.repository.TaskRepositoryImpl
 import com.example.anchor.domain.repository.BackupRepository
 import com.example.anchor.domain.repository.IdentityRepository
 import com.example.anchor.domain.repository.NotificationRepository
 import com.example.anchor.domain.repository.SettingsRepository
+import com.example.anchor.domain.repository.StreakRepository
 import com.example.anchor.domain.repository.TaskRepository
 
 /**
@@ -52,6 +54,10 @@ class AppContainer(context: Context) {
 
     val taskRepository: TaskRepository by lazy {
         TaskRepositoryImpl(taskDao = database.taskDao())
+    }
+
+    val streakRepository: StreakRepository by lazy {
+        StreakRepositoryImpl(userPreferencesDataStore = userPreferencesDataStore)
     }
 
     val notificationRepository: NotificationRepository by lazy {

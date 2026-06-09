@@ -26,6 +26,7 @@ import com.example.anchor.R
 import com.example.anchor.di.AppContainer
 import com.example.anchor.ui.components.DailyTasksSection
 import com.example.anchor.ui.components.IdentityCard
+import com.example.anchor.ui.components.StreakCard
 
 /**
  * 首页 Composable。
@@ -39,6 +40,7 @@ fun HomeScreen(
         factory = HomeViewModelFactory(
             identityRepository = appContainer.identityRepository,
             taskRepository = appContainer.taskRepository,
+            streakRepository = appContainer.streakRepository,
         ),
     ),
 ) {
@@ -67,6 +69,10 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp, vertical = 16.dp),
         ) {
             IdentityCard(identity = uiState.todayIdentity)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            StreakCard(streakInfo = uiState.streakInfo)
 
             Spacer(modifier = Modifier.height(32.dp))
 

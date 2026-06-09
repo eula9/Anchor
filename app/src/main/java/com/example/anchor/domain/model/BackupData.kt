@@ -14,6 +14,9 @@ data class BackupData(
     val notificationHour: Int,
     val notificationMinute: Int,
     val themeMode: String,
+    val currentStreak: Int = 0,
+    val longestStreak: Int = 0,
+    val lastActiveDate: String? = null,
     val tasks: List<BackupTask>,
 )
 

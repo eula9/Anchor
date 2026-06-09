@@ -22,6 +22,9 @@ object BackupJsonSerializer {
             put("notificationHour", backup.notificationHour)
             put("notificationMinute", backup.notificationMinute)
             put("themeMode", backup.themeMode)
+            put("currentStreak", backup.currentStreak)
+            put("longestStreak", backup.longestStreak)
+            put("lastActiveDate", backup.lastActiveDate)
             put("tasks", JSONArray().apply {
                 backup.tasks.forEach { task ->
                     put(JSONObject().apply {
@@ -64,6 +67,9 @@ object BackupJsonSerializer {
             notificationHour = json.getInt("notificationHour"),
             notificationMinute = json.getInt("notificationMinute"),
             themeMode = json.getString("themeMode"),
+            currentStreak = json.optInt("currentStreak", 0),
+            longestStreak = json.optInt("longestStreak", 0),
+            lastActiveDate = json.optString("lastActiveDate").ifBlank { null },
             tasks = tasks,
         )
     }

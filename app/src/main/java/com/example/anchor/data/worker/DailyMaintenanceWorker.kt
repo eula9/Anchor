@@ -20,6 +20,7 @@ class DailyMaintenanceWorker(
     override suspend fun doWork(): Result {
         return try {
             val container = (applicationContext as AnchorApplication).appContainer
+            container.streakRepository.refreshDayBoundary()
             val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
             container.database.taskDao().deleteTasksNotOnDate(today)
             Result.success()
