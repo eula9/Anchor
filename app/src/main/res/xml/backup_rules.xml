@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android Auto Backup 规则：包含 DataStore 与 Room 数据库。
+    详见 https://developer.android.com/guide/topics/data/autobackup
+-->
+<full-backup-content>
+    <include domain="file" path="datastore/anchor_preferences.preferences_pb" />
+    <include domain="database" path="anchor_database" />
+    <include domain="database" path="anchor_database-shm" />
+    <include domain="database" path="anchor_database-wal" />
+</full-backup-content>

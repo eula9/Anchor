@@ -1,0 +1,46 @@
+<resources>
+    <string name="app_name">Anchor</string>
+
+    <!-- 导航 -->
+    <string name="nav_home">首页</string>
+
+    <!-- 身份卡片 -->
+    <string name="identity_card_title">今日身份</string>
+    <string name="identity_loading">加载中…</string>
+
+    <!-- 今日三件事 -->
+    <string name="daily_tasks_title">今日三件事</string>
+    <string name="task_input_hint">添加一件事…</string>
+    <string name="task_empty_hint">写下今天最重要的事</string>
+    <string name="task_limit_reached">今日已满 3 件</string>
+
+    <!-- 通知 -->
+    <string name="notification_channel_name">每日身份提醒</string>
+    <string name="notification_channel_description">每天在锁屏界面展示今日身份宣言</string>
+    <string name="notification_identity_title">今日身份</string>
+    <string name="notification_identity_body">身份 · %1$s</string>
+    <string name="notification_card_title">每日锁屏提醒</string>
+    <string name="notification_card_description">每天定时将今日身份推送到锁屏</string>
+    <string name="notification_card_enabled_with_time">每天 %1$s 推送</string>
+    <string name="notification_enable_button">开启每日提醒</string>
+    <string name="notification_disable_button">关闭提醒</string>
+    <string name="notification_permission_required">需要通知权限才能在锁屏展示身份</string>
+    <string name="notification_time_label">提醒时间</string>
+    <string name="notification_time_picker_confirm">确定</string>
+    <string name="notification_time_picker_cancel">取消</string>
+
+    <!-- 设置页 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_back">返回</string>
+    <string name="settings_theme_title">深色模式</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_workmanager_title">后台任务</string>
+    <string name="settings_workmanager_notification">身份通知任务</string>
+    <string name="settings_workmanager_maintenance">数据维护任务</string>
+    <string name="settings_backup_title">数据备份</string>
+    <string name="settings_backup_description">导出或恢复身份、任务与偏好设置</string>
+    <string name="settings_backup_export">导出备份</string>
+    <string name="settings_backup_import">导入备份</string>
+</resources>
