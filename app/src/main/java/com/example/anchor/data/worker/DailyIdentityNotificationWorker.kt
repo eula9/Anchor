@@ -7,7 +7,7 @@ import com.example.anchor.AnchorApplication
 import com.example.anchor.util.NotificationPermissionHelper
 
 /**
- * 每日身份通知 Worker。
+ * 每日身份锚点通知 Worker。
  */
 class DailyIdentityNotificationWorker(
     appContext: Context,
@@ -21,14 +21,12 @@ class DailyIdentityNotificationWorker(
             }
 
             val container = (applicationContext as AnchorApplication).appContainer
-
             if (!container.userPreferencesDataStore.isNotificationEnabled()) {
                 return Result.success()
             }
 
-            val identity = container.identityRepository.getTodayIdentity()
-            container.identityNotificationManager.showDailyIdentityNotification(identity)
-
+            val anchor = container.identityRepository.getActiveAnchor() ?: return Result.success()
+            container.identityNotificationManager.showDailyIdentityNotification(anchor)
             Result.success()
         } catch (e: Exception) {
             if (runAttemptCount < 3) Result.retry() else Result.failure()

@@ -6,16 +6,15 @@ import kotlinx.coroutines.flow.Flow
 /**
  * 连续行动天数仓库接口。
  *
- * 行动定义：今日至少完成一件事。
+ * 连续规则：连续完成全部固定任务的天数。
  */
 interface StreakRepository {
 
-    /** 观察连续行动天数状态 */
     val streakInfo: Flow<StreakInfo>
 
-    /** 跨日时结算连续天数（断档则重置） */
+    /** 跨日时结算连续天数 */
     suspend fun refreshDayBoundary()
 
-    /** 记录今日已完成行动 */
-    suspend fun markActionToday()
+    /** 今日完成全部固定任务后更新连续天数 */
+    suspend fun onAllFixedTasksCompleted()
 }

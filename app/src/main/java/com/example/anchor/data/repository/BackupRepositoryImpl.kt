@@ -3,6 +3,7 @@ package com.example.anchor.data.repository
 import android.content.Context
 import android.net.Uri
 import com.example.anchor.data.backup.BackupJsonSerializer
+import com.example.anchor.data.local.dao.DailyRecordDao
 import com.example.anchor.data.local.dao.TaskDao
 import com.example.anchor.data.local.datastore.UserPreferencesDataStore
 import com.example.anchor.data.local.entity.TaskEntity
@@ -18,12 +19,13 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /**
- * 数据备份仓库实现类。
+ * 数据备份仓库实现。
  */
 class BackupRepositoryImpl(
     private val appContext: Context,
     private val userPreferencesDataStore: UserPreferencesDataStore,
     private val taskDao: TaskDao,
+    private val dailyRecordDao: DailyRecordDao,
     private val notificationScheduler: NotificationScheduler,
 ) : BackupRepository {
 
@@ -35,20 +37,25 @@ class BackupRepositoryImpl(
             val backup = BackupData(
                 version = Constants.BACKUP_VERSION,
                 exportTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-                identityDate = prefs.identityDate,
-                identityIndex = prefs.identityIndex,
+                isSetupComplete = prefs.isSetupComplete,
+                identity = prefs.identity,
+                startDate = prefs.startDate,
+                durationDays = prefs.durationDays,
+                fixedTaskTemplates = prefs.fixedTaskTemplates,
                 notificationEnabled = prefs.notificationEnabled,
                 notificationHour = prefs.notificationHour,
                 notificationMinute = prefs.notificationMinute,
                 themeMode = prefs.themeMode.name,
                 currentStreak = prefs.currentStreak,
                 longestStreak = prefs.longestStreak,
-                lastActiveDate = prefs.lastActiveDate,
+                lastPerfectDate = prefs.lastPerfectDate,
                 tasks = tasks.map { entity ->
                     BackupTask(
                         content = entity.content,
                         completed = entity.completed,
                         date = entity.date,
+                        type = entity.type,
+                        orderIndex = entity.orderIndex,
                     )
                 },
             )
@@ -70,15 +77,18 @@ class BackupRepositoryImpl(
 
             userPreferencesDataStore.restoreAppPreferences(
                 UserPreferencesDataStore.AppPreferences(
-                    identityDate = backup.identityDate,
-                    identityIndex = backup.identityIndex,
+                    isSetupComplete = backup.isSetupComplete,
+                    identity = backup.identity,
+                    startDate = backup.startDate,
+                    durationDays = backup.durationDays,
+                    fixedTaskTemplates = backup.fixedTaskTemplates,
                     notificationEnabled = backup.notificationEnabled,
                     notificationHour = backup.notificationHour,
                     notificationMinute = backup.notificationMinute,
                     themeMode = ThemeMode.fromString(backup.themeMode),
                     currentStreak = backup.currentStreak,
                     longestStreak = backup.longestStreak,
-                    lastActiveDate = backup.lastActiveDate,
+                    lastPerfectDate = backup.lastPerfectDate,
                 ),
             )
 
@@ -88,11 +98,14 @@ class BackupRepositoryImpl(
                         content = task.content,
                         completed = task.completed,
                         date = task.date,
+                        type = task.type,
+                        orderIndex = task.orderIndex,
                     )
                 },
             )
 
-            // 根据恢复后的通知设置重新调度 WorkManager
+            dailyRecordDao.deleteAllRecords()
+
             if (backup.notificationEnabled) {
                 notificationScheduler.scheduleDailyNotification(
                     backup.notificationHour,
@@ -101,6 +114,7 @@ class BackupRepositoryImpl(
             } else {
                 notificationScheduler.cancelDailyNotification()
             }
+            Unit
         }
     }
 }

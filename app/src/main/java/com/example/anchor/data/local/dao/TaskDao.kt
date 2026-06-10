@@ -9,19 +9,22 @@ import com.example.anchor.data.local.entity.TaskEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
- * 今日任务 DAO 接口。
+ * 任务 DAO 接口。
  */
 @Dao
 interface TaskDao {
 
-    @Query("SELECT * FROM tasks WHERE date = :date ORDER BY id ASC")
+    @Query("SELECT * FROM tasks WHERE date = :date AND type = :type ORDER BY orderIndex ASC, id ASC")
+    fun observeTasksByDateAndType(date: String, type: Int): Flow<List<TaskEntity>>
+
+    @Query("SELECT * FROM tasks WHERE date = :date ORDER BY type ASC, orderIndex ASC, id ASC")
     fun observeTasksByDate(date: String): Flow<List<TaskEntity>>
 
     @Query("SELECT * FROM tasks ORDER BY id ASC")
     suspend fun getAllTasks(): List<TaskEntity>
 
-    @Query("SELECT COUNT(*) FROM tasks WHERE date = :date")
-    suspend fun countTasksByDate(date: String): Int
+    @Query("SELECT COUNT(*) FROM tasks WHERE date = :date AND type = :type")
+    suspend fun countTasksByDateAndType(date: String, type: Int): Int
 
     @Insert
     suspend fun insertTask(task: TaskEntity): Long
@@ -35,13 +38,19 @@ interface TaskDao {
     @Query("UPDATE tasks SET completed = :completed WHERE id = :id")
     suspend fun updateCompleted(id: Long, completed: Boolean)
 
+    /** 仅允许从未完成变为完成 */
+    @Query("UPDATE tasks SET completed = 1 WHERE id = :id AND completed = 0")
+    suspend fun completeTask(id: Long)
+
+    @Query("DELETE FROM tasks WHERE date != :today AND type = 1")
+    suspend fun deleteOptionalTasksNotOnDate(today: String)
+
     @Query("DELETE FROM tasks WHERE date != :today")
     suspend fun deleteTasksNotOnDate(today: String)
 
     @Query("DELETE FROM tasks")
     suspend fun deleteAllTasks()
 
-    /** 原子替换全部任务（用于数据恢复） */
     @Transaction
     suspend fun replaceAllTasks(tasks: List<TaskEntity>) {
         deleteAllTasks()

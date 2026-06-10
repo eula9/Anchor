@@ -1,5 +1,6 @@
 package com.example.anchor.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,20 +18,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.anchor.R
 import com.example.anchor.domain.model.StreakInfo
+import com.example.anchor.ui.theme.streakCardColors
 
 /**
- * 连续行动天数卡片。
+ * 连续完成固定任务天数卡片。
  */
 @Composable
 fun StreakCard(
     streakInfo: StreakInfo,
     modifier: Modifier = Modifier,
 ) {
+    val colors = streakCardColors()
+
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-        ),
+        colors = CardDefaults.cardColors(containerColor = colors.container),
+        border = BorderStroke(1.dp, colors.border),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Row(
@@ -44,12 +47,12 @@ fun StreakCard(
                 Text(
                     text = stringResource(R.string.streak_card_title),
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                    color = colors.title,
                 )
                 Text(
                     text = streakSubtitle(streakInfo),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.85f),
+                    color = colors.body,
                     modifier = Modifier.padding(top = 4.dp),
                 )
                 if (streakInfo.longestStreak > 0) {
@@ -59,7 +62,7 @@ fun StreakCard(
                             streakInfo.longestStreak,
                         ),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
+                        color = colors.body.copy(alpha = 0.7f),
                         modifier = Modifier.padding(top = 8.dp),
                     )
                 }
@@ -69,7 +72,7 @@ fun StreakCard(
                 text = streakInfo.currentStreak.toString(),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                color = colors.accent,
             )
         }
     }

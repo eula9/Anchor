@@ -1,12 +1,13 @@
 # Anchor
 
-> 锚定今日身份，聚焦三件要事。
+> 锚定身份，每日行动。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
+[![Version](https://img.shields.io/badge/version-1.1-blue.svg)](app/build.gradle.kts)
 [![Min SDK](https://img.shields.io/badge/minSdk-26-orange.svg)](app/build.gradle.kts)
 
-**Anchor** 是一款极简风格的 Android 每日行动应用。它不追求复杂的待办体系，而是用「今日身份」帮你建立自我认同，用「今日三件事」把精力集中在当下真正重要的事上。
+**Anchor** 是一款极简风格的 Android 每日行动应用。通过「身份锚点」建立自我认同，用固定任务与可选任务驱动每日行动，辅以启动页激励语与可靠的后台提醒，让习惯可持续。
 
 **仓库地址**：[github.com/eula9/Anchor](https://github.com/eula9/Anchor)
 
@@ -14,7 +15,7 @@
 
 ## 为什么叫 Anchor？
 
-锚（Anchor）的含义很简单：在每天开始时，先确认「我是谁」，再决定「我要做什么」。身份是方向，三件事是行动，提醒与备份让这一切可以持续下去。
+锚（Anchor）的含义很简单：先确认「我是谁」，再完成「我今天该做的事」。身份是方向，任务是行动，提醒与统计让这一切可以持续下去。
 
 ---
 
@@ -22,13 +23,27 @@
 
 | 模块 | 说明 |
 |------|------|
-| 今日身份 | 内置 50 条身份宣言，每天随机一条；同日不变，跨天自动切换 |
-| 今日三件事 | 每天最多 3 条任务，支持勾选完成，次日自动清空 |
-| 锁屏提醒 | 可自定义推送时间，在锁屏展示今日身份 |
-| 深色模式 | 跟随系统 / 浅色 / 深色 |
-| 数据备份 | JSON 导出与导入，兼容 Android 系统自动备份 |
-| 后台维护 | WorkManager 负责定时通知与跨天数据清理 |
-| 连续行动 | 完成至少一件事即计为行动，统计连续天数与最长记录 |
+| **启动页** | 纯文字界面：居中展示身份宣言与「今日一句」激励语，点击屏幕进入首页 |
+| **身份锚点** | 自定义身份宣言（≤30 字）、周期 7/14/30 天或自定义 1~365 天 |
+| **固定任务** | 3~6 条每日必做任务，全部完成计连续行动天数 |
+| **可选任务** | 每天最多 3 条临时想做的事 |
+| **今日一句** | 内置 100 条激励语（现代励志为主），每天随机一条 |
+| **连续行动** | 完成全部固定任务延续连续记录，展示最长记录 |
+| **统计** | 行动率、连续天数、任务完成总数、近 7 日柱状图 |
+| **每日提醒** | AlarmManager 闹钟 + WorkManager 备用，支持国产机后台引导 |
+| **深色模式** | 跟随系统 / 浅色 / 深色 |
+| **数据备份** | JSON 导出与导入（备份版本 v3） |
+
+---
+
+## 版本更新（v1.1）
+
+- 产品重构为「身份锚点 + 固定/可选任务」体系
+- 新增启动页（身份宣言 + 每日激励语，无图标纯文字）
+- 新增统计页与底部导航（首页 / 统计 / 设置）
+- 通知改用 `AlarmManager.setAlarmClock`，划掉后台后更可靠
+- 支持小米 / 华为 / OPPO / vivo 等国产机后台权限引导
+- 每次打开应用自动重登记闹钟，备用 Worker 兜底通知
 
 ---
 
@@ -38,7 +53,9 @@
 
 ```
 docs/screenshots/
-├── home.png       # 首页：身份 + 三件事
+├── launch.png     # 启动页：身份宣言 + 今日一句
+├── home.png       # 首页：锚点、连续行动、任务列表
+├── stats.png      # 统计页
 └── settings.png   # 设置页
 ```
 
@@ -48,14 +65,17 @@ docs/screenshots/
 
 - **Kotlin** + **Jetpack Compose** + **Material 3**
 - **MVVM** + **Clean Architecture**（`data` / `domain` / `ui` 分层）
-- **Room** — 今日三件事本地存储
-- **DataStore** — 身份、主题、通知偏好
-- **WorkManager** — 每日通知与维护任务
-- **Navigation Compose** — 页面导航
-- **Gradle Version Catalog** — 统一依赖版本管理
+- **Room v3** — 任务与每日打卡记录
+- **DataStore** — 身份锚点、主题、通知、连续天数、激励语
+- **AlarmManager** — 每日定时提醒（主通道）
+- **WorkManager** — 数据维护、备用通知、锚点到期检查
+- **Navigation Compose** — 启动页 / 首页 / 统计 / 设置
+- **SplashScreen API** — 无图标纯白启动闪屏
 
 | 配置项 | 值 |
 |--------|-----|
+| versionName | 1.1 |
+| versionCode | 2 |
 | minSdk | 26（Android 8.0） |
 | targetSdk | 36 |
 | compileSdk | 36 |
@@ -66,11 +86,19 @@ docs/screenshots/
 
 ```
 app/src/main/java/com/example/anchor/
-├── data/              # Room、DataStore、Repository 实现、通知、备份、Worker
+├── data/              # Room、DataStore、Repository、通知、备份、Worker
+│   ├── notification/  # AlarmManager 调度、BroadcastReceiver
+│   ├── source/        # 100 条内置激励语
+│   └── worker/        # 维护、备用通知、锚点到期
 ├── domain/            # 领域模型与 Repository 接口
-├── ui/                # Compose 界面、ViewModel、导航、主题
+├── ui/
+│   ├── launch/        # 启动页
+│   ├── home/          # 首页
+│   ├── stats/         # 统计
+│   ├── setup/         # 首次引导
+│   └── settings/      # 设置
 ├── di/                # AppContainer 手动依赖注入
-└── util/              # 常量与工具类
+└── util/              # 权限、OEM 引导、常量
 ```
 
 ---
@@ -107,25 +135,56 @@ cd Anchor
 ./gradlew assembleDebug
 ```
 
-Debug APK 输出路径：`app/build/outputs/apk/debug/app-debug.apk`
+Debug APK 输出路径：
+
+```
+app/build/outputs/apk/debug/app-debug.apk
+```
+
+> APK 为构建产物，已由 `.gitignore` 排除，不会提交到 Git。请在本地构建或自行下载 Release 包。
 
 ---
 
 ## 使用指南
 
+### 首次使用
+
+1. 设置身份宣言、锚点周期与 3~6 条固定任务
+2. 进入启动页查看今日身份与激励语，点击进入首页
+
+### 启动页
+
+- 屏幕中央：**身份宣言**（上）+ **今日一句**（下）
+- 无图标、无卡片，点击任意位置进入首页
+
 ### 首页
 
-- 顶部 **今日身份** 卡片：展示当天的身份宣言
-- 下方 **今日三件事**：输入后回车添加，点击勾选标记完成
+- **身份锚点**：当前宣言与周期进度
+- **连续行动**：今日固定任务是否全部完成
+- **固定任务**：勾选完成（不可取消）
+- **可选任务**：每天最多添加 3 条
+
+### 统计页
+
+- 行动率、连续天数、任务完成总数
+- 近 7 日完成趋势柱状图
 
 ### 设置页
 
-从首页右上角齿轮图标进入：
+- **深色模式** — 切换主题
+- **每日锁屏提醒** — 通知 / 精确闹钟 / 电池优化 / 厂商后台引导
+- **后台任务** — WorkManager 状态
+- **数据备份** — 导出 / 导入 JSON
 
-- **深色模式** — 切换主题外观
-- **每日锁屏提醒** — 授权通知并设置推送时间
-- **后台任务** — 查看 WorkManager 运行状态
-- **数据备份** — 导出 / 导入 JSON 备份文件
+### 国产手机提醒设置建议
+
+开启每日提醒时，请依次完成系统权限，并在厂商设置中：
+
+- 开启 **自启动**
+- 省电策略选 **无限制** / **不优化**
+- 多任务界面 **锁定应用**
+
+完成后点击 **「我已完成设置」**（系统无法自动检测自启动状态）。
 
 ---
 
@@ -133,18 +192,22 @@ Debug APK 输出路径：`app/build/outputs/apk/debug/app-debug.apk`
 
 | 权限 | 用途 |
 |------|------|
-| `POST_NOTIFICATIONS` | Android 13+ 发送每日身份锁屏通知 |
+| `POST_NOTIFICATIONS` | Android 13+ 发送每日身份提醒 |
+| `SCHEDULE_EXACT_ALARM` | 精确定时闹钟 |
+| `RECEIVE_BOOT_COMPLETED` | 开机后恢复闹钟 |
+| `WAKE_LOCK` | 闹钟触发时唤醒设备 |
+| `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | 申请忽略电池优化 |
 
 ---
 
 ## 路线图
 
-- [x] 今日身份（50 条宣言 + 每日随机）
-- [x] 今日三件事（Room + 跨天清空）
-- [x] 锁屏通知与自定义时间
-- [x] 深色模式、数据备份、WorkManager
-- [x] 连续行动天数统计
-- [ ] 应用截图与 Release 构建
+- [x] 身份锚点体系（宣言 + 周期 + 固定任务）
+- [x] 启动页激励语（100 条）
+- [x] 固定 / 可选任务、连续行动、统计页
+- [x] AlarmManager 可靠通知 + 国产机后台引导
+- [x] 数据备份 v3、深色模式
+- [ ] 应用截图与 Release 签名包
 
 ---
 

@@ -6,6 +6,7 @@ import com.example.anchor.data.notification.NotificationScheduler
 import com.example.anchor.domain.model.ThemeMode
 import com.example.anchor.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /**
  * 设置仓库实现类。
@@ -22,7 +23,9 @@ class SettingsRepositoryImpl(
     }
 
     override val notificationWorkStatus: Flow<WorkInfo.State?> =
-        notificationScheduler.observeNotificationWorkStatus()
+        userPreferencesDataStore.notificationEnabledFlow.map { enabled ->
+            if (enabled) WorkInfo.State.ENQUEUED else null
+        }
 
     override val maintenanceWorkStatus: Flow<WorkInfo.State?> =
         notificationScheduler.observeMaintenanceWorkStatus()

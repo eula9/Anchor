@@ -9,8 +9,6 @@ import java.time.format.DateTimeFormatter
 
 /**
  * 每日数据维护 Worker。
- *
- * 负责清理过期任务等日常维护操作。
  */
 class DailyMaintenanceWorker(
     appContext: Context,
@@ -21,8 +19,13 @@ class DailyMaintenanceWorker(
         return try {
             val container = (applicationContext as AnchorApplication).appContainer
             container.streakRepository.refreshDayBoundary()
+
             val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
             container.database.taskDao().deleteTasksNotOnDate(today)
+
+            val templates = container.userPreferencesDataStore.getAnchorPreferences().fixedTaskTemplates
+            container.taskRepository.ensureTodayFixedTasks(templates)
+
             Result.success()
         } catch (e: Exception) {
             if (runAttemptCount < 3) Result.retry() else Result.failure()

@@ -3,7 +3,11 @@ package com.example.anchor.ui.settings
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.anchor.data.repository.BatteryOptimizationRequiredException
+import com.example.anchor.data.repository.ExactAlarmPermissionRequiredException
 import com.example.anchor.data.repository.NotificationPermissionDeniedException
+import com.example.anchor.data.repository.OemBackgroundRequiredException
+import com.example.anchor.data.repository.ReminderScheduleFailedException
 import com.example.anchor.domain.model.ThemeMode
 import com.example.anchor.domain.repository.BackupRepository
 import com.example.anchor.domain.repository.NotificationRepository
@@ -23,14 +27,16 @@ class SettingsViewModel(
     private val backupRepository: BackupRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        SettingsUiState(
-            isNotificationPermissionGranted = notificationRepository.isPermissionGranted(),
-        ),
-    )
+    private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
+    private var pendingEnableReminder = false
+    private var hasPromptedExactAlarmSettings = false
+    private var hasPromptedBatterySettings = false
+    private var hasPromptedOemSettings = false
+
     init {
+        refreshPermissionState()
         observeThemeMode()
         observeNotificationEnabled()
         observeNotificationTime()
@@ -43,29 +49,164 @@ class SettingsViewModel(
         }
     }
 
-    fun requestEnableNotification() {
-        if (notificationRepository.requiresRuntimePermission() &&
-            !notificationRepository.isPermissionGranted()
-        ) {
-            return
+    fun beginEnableReminder() {
+        pendingEnableReminder = true
+        resetSettingsPromptFlags()
+        continueReminderSetup()
+    }
+
+    fun onExactAlarmSettingsOpened() {
+        hasPromptedExactAlarmSettings = true
+        clearReminderSetupStep()
+    }
+
+    fun onBatterySettingsOpened() {
+        hasPromptedBatterySettings = true
+        clearReminderSetupStep()
+    }
+
+    fun onOemSettingsOpened() {
+        hasPromptedOemSettings = true
+        _uiState.update {
+            it.copy(awaitingOemConfirm = true, reminderSetupStep = null)
         }
-        enableNotification()
     }
 
     fun onNotificationPermissionResult(granted: Boolean) {
+        if (granted) {
+            refreshPermissionState()
+            continueReminderSetup()
+        } else {
+            pendingEnableReminder = false
+            _uiState.update {
+                it.copy(
+                    notificationError = "需要通知权限才能开启提醒",
+                    reminderSetupStep = null,
+                    awaitingOemConfirm = false,
+                )
+            }
+        }
+    }
+
+    fun continueReminderSetup() {
+        if (!pendingEnableReminder) return
+
+        viewModelScope.launch {
+            refreshPermissionStateInternal()
+            val state = _uiState.value
+
+            when {
+                notificationRepository.requiresRuntimePermission() &&
+                    !state.isNotificationPermissionGranted -> {
+                    _uiState.update {
+                        it.copy(reminderSetupStep = ReminderSetupStep.NOTIFICATION, notificationError = null)
+                    }
+                }
+
+                notificationRepository.needsExactAlarmPermission() &&
+                    !state.canScheduleExactAlarms -> {
+                    if (hasPromptedExactAlarmSettings) {
+                        _uiState.update {
+                            it.copy(
+                                reminderSetupStep = null,
+                                notificationError = "请允许精确闹钟后，再次点击「开启每日提醒」",
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                reminderSetupStep = ReminderSetupStep.EXACT_ALARM,
+                                notificationError = null,
+                            )
+                        }
+                    }
+                }
+
+                !state.isBatteryOptimizationIgnored -> {
+                    if (hasPromptedBatterySettings) {
+                        _uiState.update {
+                            it.copy(
+                                reminderSetupStep = null,
+                                notificationError = "请允许忽略电池优化后，再次点击「开启每日提醒」",
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                reminderSetupStep = ReminderSetupStep.BATTERY_OPTIMIZATION,
+                                notificationError = null,
+                            )
+                        }
+                    }
+                }
+
+                notificationRepository.needsOemBackgroundSetup() -> {
+                    if (hasPromptedOemSettings || state.awaitingOemConfirm) {
+                        _uiState.update {
+                            it.copy(
+                                reminderSetupStep = null,
+                                awaitingOemConfirm = true,
+                                notificationError = "完成自启动设置后，请点击下方「我已完成设置」",
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                reminderSetupStep = ReminderSetupStep.OEM_BACKGROUND,
+                                awaitingOemConfirm = false,
+                                notificationError = null,
+                            )
+                        }
+                    }
+                }
+
+                else -> {
+                    _uiState.update {
+                        it.copy(reminderSetupStep = null, awaitingOemConfirm = false)
+                    }
+                    enableNotification()
+                }
+            }
+        }
+    }
+
+    fun clearReminderSetupStep() {
+        _uiState.update { it.copy(reminderSetupStep = null) }
+    }
+
+    fun onOemBackgroundConfirmed() {
+        viewModelScope.launch {
+            notificationRepository.confirmOemBackgroundSetup()
+            hasPromptedOemSettings = false
+            refreshPermissionStateInternal()
+            if (pendingEnableReminder) {
+                continueReminderSetup()
+            } else {
+                notificationRepository.ensureReminderScheduled()
+                _uiState.update {
+                    it.copy(awaitingOemConfirm = false, notificationError = null)
+                }
+            }
+        }
+    }
+
+    fun openOemBackgroundSettingsAgain() {
+        hasPromptedOemSettings = false
         _uiState.update {
             it.copy(
-                isNotificationPermissionGranted = granted,
-                notificationError = if (granted) null else "需要通知权限才能开启提醒",
+                reminderSetupStep = ReminderSetupStep.OEM_BACKGROUND,
+                awaitingOemConfirm = false,
             )
         }
-        if (granted) enableNotification()
     }
 
     fun disableNotification() {
+        pendingEnableReminder = false
         viewModelScope.launch {
             notificationRepository.disableDailyNotification()
-            _uiState.update { it.copy(notificationError = null) }
+            _uiState.update {
+                it.copy(notificationError = null, reminderSetupStep = null, awaitingOemConfirm = false)
+            }
         }
     }
 
@@ -76,8 +217,14 @@ class SettingsViewModel(
     }
 
     fun refreshPermissionState() {
-        _uiState.update {
-            it.copy(isNotificationPermissionGranted = notificationRepository.isPermissionGranted())
+        viewModelScope.launch {
+            refreshPermissionStateInternal()
+        }
+    }
+
+    fun ensureReminderScheduled() {
+        viewModelScope.launch {
+            notificationRepository.ensureReminderScheduled()
         }
     }
 
@@ -121,19 +268,44 @@ class SettingsViewModel(
         _uiState.update { it.copy(backupMessage = null, backupError = null) }
     }
 
+    private suspend fun refreshPermissionStateInternal() {
+        _uiState.update {
+            it.copy(
+                isNotificationPermissionGranted = notificationRepository.isPermissionGranted(),
+                canScheduleExactAlarms = notificationRepository.canScheduleExactAlarms(),
+                isBatteryOptimizationIgnored = notificationRepository.isBatteryOptimizationIgnored(),
+                oemVendor = notificationRepository.getOemVendor(),
+                isOemBackgroundConfirmed = notificationRepository.isOemBackgroundConfirmed(),
+            )
+        }
+    }
+
     private fun enableNotification() {
         viewModelScope.launch {
             notificationRepository.enableDailyNotification()
                 .onSuccess {
-                    _uiState.update { it.copy(notificationError = null) }
+                    pendingEnableReminder = false
+                    resetSettingsPromptFlags()
+                    _uiState.update {
+                        it.copy(notificationError = null, reminderSetupStep = null, awaitingOemConfirm = false)
+                    }
                 }
                 .onFailure { error ->
+                    pendingEnableReminder = false
+                    resetSettingsPromptFlags()
                     _uiState.update {
                         it.copy(
                             notificationError = when (error) {
                                 is NotificationPermissionDeniedException -> "请先授予通知权限"
+                                is ExactAlarmPermissionRequiredException -> "请允许精确闹钟权限"
+                                is BatteryOptimizationRequiredException -> "请允许忽略电池优化"
+                                is OemBackgroundRequiredException ->
+                                    "请完成${notificationRepository.getOemVendor().displayName}后台设置"
+                                is ReminderScheduleFailedException -> "闹钟调度失败，请检查系统权限后重试"
                                 else -> "开启提醒失败，请重试"
                             },
+                            reminderSetupStep = null,
+                            awaitingOemConfirm = false,
                         )
                     }
                 }
@@ -162,6 +334,12 @@ class SettingsViewModel(
                 _uiState.update { it.copy(notificationTime = time) }
             }
         }
+    }
+
+    private fun resetSettingsPromptFlags() {
+        hasPromptedExactAlarmSettings = false
+        hasPromptedBatterySettings = false
+        hasPromptedOemSettings = false
     }
 
     private fun observeWorkStatus() {

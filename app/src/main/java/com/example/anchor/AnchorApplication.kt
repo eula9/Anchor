@@ -2,6 +2,7 @@ package com.example.anchor
 
 import android.app.Application
 import com.example.anchor.di.AppContainer
+import com.example.anchor.util.ReminderPermissionHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,21 +23,19 @@ class AnchorApplication : Application() {
         appContainer = AppContainer(applicationContext)
         appContainer.identityNotificationManager.createNotificationChannel()
 
-        // 始终注册每日维护任务
+        // 注册后台维护与锚点到期检查
         appContainer.notificationScheduler.scheduleDailyMaintenance()
+        appContainer.notificationScheduler.scheduleAnchorExpiryCheck()
 
         restoreNotificationScheduleIfNeeded()
     }
 
     private fun restoreNotificationScheduleIfNeeded() {
         val container = appContainer
-        if (!container.notificationRepository.isPermissionGranted()) return
+        if (!ReminderPermissionHelper.canScheduleReliableReminder(this)) return
 
         applicationScope.launch {
-            if (container.userPreferencesDataStore.isNotificationEnabled()) {
-                val time = container.userPreferencesDataStore.getNotificationTime()
-                container.notificationScheduler.scheduleDailyNotification(time.hour, time.minute)
-            }
+            container.notificationRepository.ensureReminderScheduled()
         }
     }
 }

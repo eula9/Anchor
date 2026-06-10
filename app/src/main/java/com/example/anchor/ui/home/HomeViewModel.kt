@@ -10,6 +10,7 @@ import com.example.anchor.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -26,23 +27,44 @@ class HomeViewModel(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch { streakRepository.refreshDayBoundary() }
-        observeTodayIdentity()
-        observeTodayTasks()
+        viewModelScope.launch {
+            streakRepository.refreshDayBoundary()
+            val templates = identityRepository.fixedTaskTemplates.first()
+            taskRepository.ensureTodayFixedTasks(templates)
+        }
+        observeActiveAnchor()
+        observeFixedTasks()
+        observeOptionalTasks()
         observeStreakInfo()
     }
 
-    fun onTaskInputChange(text: String) {
-        _uiState.update { it.copy(taskInput = text, taskError = null) }
+    fun showAddOptionalDialog() {
+        _uiState.update {
+            it.copy(showOptionalDialog = true, optionalDialogInput = "", taskError = null)
+        }
     }
 
-    fun addTask() {
-        val content = _uiState.value.taskInput
+    fun dismissOptionalDialog() {
+        _uiState.update {
+            it.copy(showOptionalDialog = false, optionalDialogInput = "", taskError = null)
+        }
+    }
+
+    fun onOptionalDialogInputChange(text: String) {
+        _uiState.update { it.copy(optionalDialogInput = text, taskError = null) }
+    }
+
+    fun confirmAddOptionalTask() {
+        val content = _uiState.value.optionalDialogInput
         viewModelScope.launch {
-            taskRepository.addTask(content)
+            taskRepository.addOptionalTask(content)
                 .onSuccess {
-                    _uiState.update { state ->
-                        state.copy(taskInput = "", taskError = null)
+                    _uiState.update {
+                        it.copy(
+                            showOptionalDialog = false,
+                            optionalDialogInput = "",
+                            taskError = null,
+                        )
                     }
                 }
                 .onFailure { error ->
@@ -53,32 +75,37 @@ class HomeViewModel(
         }
     }
 
-    fun toggleTaskComplete(taskId: Long, completed: Boolean) {
+    fun completeTask(taskId: Long) {
         viewModelScope.launch {
-            taskRepository.setTaskCompleted(taskId, completed)
-            if (completed) {
-                streakRepository.markActionToday()
-            }
+            taskRepository.completeTask(taskId)
         }
     }
 
-    private fun observeTodayIdentity() {
+    private fun observeActiveAnchor() {
         viewModelScope.launch {
-            identityRepository.todayIdentity.collect { identity ->
+            identityRepository.activeAnchor.collect { anchor ->
                 _uiState.update {
-                    it.copy(isLoading = false, todayIdentity = identity)
+                    it.copy(isLoading = false, activeAnchor = anchor)
                 }
             }
         }
     }
 
-    private fun observeTodayTasks() {
+    private fun observeFixedTasks() {
         viewModelScope.launch {
-            taskRepository.todayTasks.collect { tasks ->
-                _uiState.update { it.copy(todayTasks = tasks, taskError = null) }
-                if (tasks.any { it.completed }) {
-                    streakRepository.markActionToday()
+            taskRepository.todayFixedTasks.collect { tasks ->
+                _uiState.update { it.copy(fixedTasks = tasks, taskError = null) }
+                if (tasks.isNotEmpty() && tasks.all { it.completed }) {
+                    streakRepository.onAllFixedTasksCompleted()
                 }
+            }
+        }
+    }
+
+    private fun observeOptionalTasks() {
+        viewModelScope.launch {
+            taskRepository.todayOptionalTasks.collect { tasks ->
+                _uiState.update { it.copy(optionalTasks = tasks) }
             }
         }
     }
@@ -93,7 +120,7 @@ class HomeViewModel(
 
     private fun mapTaskError(error: Throwable): String = when (error) {
         is EmptyTaskContentException -> "请输入任务内容"
-        is TaskLimitReachedException -> "今日任务已满，最多 3 件"
+        is TaskLimitReachedException -> "今日可选任务已满"
         else -> "操作失败，请重试"
     }
 }

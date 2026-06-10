@@ -1,5 +1,6 @@
 package com.example.anchor.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,26 +14,23 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.anchor.R
-import com.example.anchor.domain.model.Identity
+import com.example.anchor.domain.model.IdentityAnchor
+import com.example.anchor.ui.theme.anchorCardColors
 
 /**
- * 今日身份卡片组件。
- *
- * 展示在首页顶部，呈现当天随机生成的身份宣言。
- *
- * @param identity 今日身份数据，null 表示加载中
- * @param modifier 外部修饰符
+ * 身份锚点卡片。
  */
 @Composable
-fun IdentityCard(
-    identity: Identity?,
+fun AnchorCard(
+    anchor: IdentityAnchor?,
     modifier: Modifier = Modifier,
 ) {
+    val colors = anchorCardColors()
+
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
+        colors = CardDefaults.cardColors(containerColor = colors.container),
+        border = BorderStroke(1.dp, colors.border),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
@@ -40,21 +38,36 @@ fun IdentityCard(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 24.dp),
         ) {
-            // 卡片标题
             Text(
-                text = stringResource(R.string.identity_card_title),
+                text = stringResource(R.string.anchor_card_title),
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                color = colors.title,
             )
 
-            // 身份语句正文
             Text(
-                text = identity?.statement ?: stringResource(R.string.identity_loading),
+                text = anchor?.statement ?: stringResource(R.string.anchor_loading),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                color = colors.body,
                 modifier = Modifier.padding(top = 8.dp),
             )
+
+            anchor?.let {
+                Text(
+                    text = if (it.isExpired) {
+                        stringResource(R.string.anchor_expired_hint)
+                    } else {
+                        stringResource(
+                            R.string.anchor_progress,
+                            it.currentDay,
+                            it.durationDays,
+                        )
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.subtitle,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
         }
     }
 }

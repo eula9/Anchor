@@ -1,30 +1,31 @@
 package com.example.anchor.domain.model
 
 /**
- * 应用数据备份模型。
- *
- * 用于 JSON 导出/导入，包含身份、通知、主题与任务数据。
+ * 应用数据备份模型（JSON 导出/导入）。
  */
 data class BackupData(
     val version: Int,
     val exportTime: String,
-    val identityDate: String?,
-    val identityIndex: Int?,
+    val isSetupComplete: Boolean = false,
+    val identity: String? = null,
+    val startDate: String? = null,
+    val durationDays: Int? = null,
+    val fixedTaskTemplates: List<String> = emptyList(),
     val notificationEnabled: Boolean,
     val notificationHour: Int,
     val notificationMinute: Int,
     val themeMode: String,
     val currentStreak: Int = 0,
     val longestStreak: Int = 0,
-    val lastActiveDate: String? = null,
+    val lastPerfectDate: String? = null,
     val tasks: List<BackupTask>,
 )
 
-/**
- * 备份中的任务条目（不含自增 id，导入时重新生成）。
- */
+/** 备份中的任务条目 */
 data class BackupTask(
     val content: String,
     val completed: Boolean,
     val date: String,
+    val type: Int = 0,
+    val orderIndex: Int = 0,
 )

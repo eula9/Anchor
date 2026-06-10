@@ -11,24 +11,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.anchor.R
@@ -44,11 +37,9 @@ import java.time.format.DateTimeFormatter
 /**
  * 设置页 Composable。
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     appContainer: AppContainer,
-    onNavigateBack: () -> Unit,
     viewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModelFactory(
             settingsRepository = appContainer.settingsRepository,
@@ -58,6 +49,7 @@ fun SettingsScreen(
     ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -77,97 +69,112 @@ fun SettingsScreen(
         uri?.let(viewModel::importBackup)
     }
 
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshPermissionState()
+    LaunchedEffect(uiState.reminderSetupStep) {
+        when (uiState.reminderSetupStep) {
+            ReminderSetupStep.EXACT_ALARM -> {
+                context.startActivity(
+                    appContainer.notificationRepository.createExactAlarmSettingsIntent(),
+                )
+                viewModel.onExactAlarmSettingsOpened()
             }
+            ReminderSetupStep.BATTERY_OPTIMIZATION -> {
+                context.startActivity(
+                    appContainer.notificationRepository.createBatteryOptimizationIntent(),
+                )
+                viewModel.onBatterySettingsOpened()
+            }
+            ReminderSetupStep.NOTIFICATION -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+                viewModel.clearReminderSetupStep()
+            }
+            ReminderSetupStep.OEM_BACKGROUND -> {
+                context.startActivity(
+                    appContainer.notificationRepository.createOemBackgroundSettingsIntent(),
+                )
+                viewModel.onOemSettingsOpened()
+            }
+            null -> Unit
         }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = stringResource(R.string.settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.settings_back),
-                        )
-                    }
-                },
-            )
-        },
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-        ) {
-            // 深色模式
-            ThemeModeSelector(
-                selectedMode = uiState.themeMode,
-                onModeSelected = viewModel::setThemeMode,
-            )
+    LifecycleResumeEffect(Unit) {
+        viewModel.refreshPermissionState()
+        viewModel.ensureReminderScheduled()
+        viewModel.continueReminderSetup()
+        onPauseOrDispose { }
+    }
 
-            Spacer(modifier = Modifier.height(32.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 20.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.settings_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
 
-            // 每日锁屏通知
-            NotificationPermissionCard(
-                isPermissionGranted = uiState.isNotificationPermissionGranted,
-                isNotificationEnabled = uiState.isNotificationEnabled,
-                notificationTime = uiState.notificationTime,
-                onTimeChange = viewModel::setNotificationTime,
-                onEnableClick = {
-                    if (viewModel.requiresNotificationPermission()) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        }
-                    } else {
-                        viewModel.requestEnableNotification()
-                    }
-                },
-                onDisableClick = viewModel::disableNotification,
-            )
+        Spacer(modifier = Modifier.height(24.dp))
 
-            if (uiState.notificationError != null) {
-                Text(
-                    text = uiState.notificationError!!,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
+        ThemeModeSelector(
+            selectedMode = uiState.themeMode,
+            onModeSelected = viewModel::setThemeMode,
+        )
 
-            Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-            // WorkManager 任务状态
-            WorkManagerStatusSection(
-                notificationWorkStatus = uiState.notificationWorkStatus,
-                maintenanceWorkStatus = uiState.maintenanceWorkStatus,
-            )
+        NotificationPermissionCard(
+            isPermissionGranted = uiState.isNotificationPermissionGranted,
+            canScheduleExactAlarms = uiState.canScheduleExactAlarms,
+            isBatteryOptimizationIgnored = uiState.isBatteryOptimizationIgnored,
+            oemVendor = uiState.oemVendor,
+            isOemBackgroundConfirmed = uiState.isOemBackgroundConfirmed,
+            awaitingOemConfirm = uiState.awaitingOemConfirm,
+            isNotificationEnabled = uiState.isNotificationEnabled,
+            notificationTime = uiState.notificationTime,
+            onTimeChange = viewModel::setNotificationTime,
+            onEnableClick = viewModel::beginEnableReminder,
+            onDisableClick = viewModel::disableNotification,
+            onOemBackgroundConfirm = viewModel::onOemBackgroundConfirmed,
+            onOpenOemSettings = viewModel::openOemBackgroundSettingsAgain,
+        )
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // 数据备份
-            BackupSection(
-                backupMessage = uiState.backupMessage,
-                backupError = uiState.backupError,
-                onExportClick = {
-                    viewModel.clearBackupMessage()
-                    val fileName = "anchor_backup_${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}.json"
-                    exportLauncher.launch(fileName)
-                },
-                onImportClick = {
-                    viewModel.clearBackupMessage()
-                    importLauncher.launch(arrayOf(Constants.BACKUP_MIME_TYPE, "application/*"))
-                },
+        if (uiState.notificationError != null) {
+            Text(
+                text = uiState.notificationError!!,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp),
             )
         }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        WorkManagerStatusSection(
+            notificationWorkStatus = uiState.notificationWorkStatus,
+            maintenanceWorkStatus = uiState.maintenanceWorkStatus,
+        )
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        BackupSection(
+            backupMessage = uiState.backupMessage,
+            backupError = uiState.backupError,
+            onExportClick = {
+                viewModel.clearBackupMessage()
+                val fileName = "anchor_backup_${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}.json"
+                exportLauncher.launch(fileName)
+            },
+            onImportClick = {
+                viewModel.clearBackupMessage()
+                importLauncher.launch(arrayOf(Constants.BACKUP_MIME_TYPE, "application/*"))
+            },
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }

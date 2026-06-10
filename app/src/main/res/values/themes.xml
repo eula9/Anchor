@@ -2,4 +2,12 @@
 <resources>
 
     <style name="Theme.Anchor" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- 系统启动闪屏：纯白背景，不显示应用图标 -->
+    <style name="Theme.Anchor.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_empty</item>
+        <item name="windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        <item name="postSplashScreenTheme">@style/Theme.Anchor</item>
+    </style>
 </resources>

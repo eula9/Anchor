@@ -7,35 +7,25 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.anchor.R
 import com.example.anchor.di.AppContainer
-import com.example.anchor.ui.components.DailyTasksSection
-import com.example.anchor.ui.components.IdentityCard
+import com.example.anchor.ui.components.AnchorCard
+import com.example.anchor.ui.components.FixedTasksSection
+import com.example.anchor.ui.components.OptionalTaskAddDialog
+import com.example.anchor.ui.components.OptionalTasksSection
 import com.example.anchor.ui.components.StreakCard
 
 /**
  * 首页 Composable。
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     appContainer: AppContainer,
-    onNavigateToSettings: () -> Unit,
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(
             identityRepository = appContainer.identityRepository,
@@ -46,45 +36,44 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = stringResource(R.string.nav_home)) },
-                actions = {
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(
-                            imageVector = Icons.Filled.Settings,
-                            contentDescription = stringResource(R.string.settings_title),
-                        )
-                    }
-                },
-            )
-        },
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-        ) {
-            IdentityCard(identity = uiState.todayIdentity)
+    if (uiState.showOptionalDialog) {
+        OptionalTaskAddDialog(
+            inputText = uiState.optionalDialogInput,
+            errorMessage = uiState.taskError,
+            onInputChange = viewModel::onOptionalDialogInputChange,
+            onConfirm = viewModel::confirmAddOptionalTask,
+            onDismiss = viewModel::dismissOptionalDialog,
+        )
+    }
 
-            Spacer(modifier = Modifier.height(16.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 20.dp),
+    ) {
+        AnchorCard(anchor = uiState.activeAnchor)
 
-            StreakCard(streakInfo = uiState.streakInfo)
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(32.dp))
+        StreakCard(streakInfo = uiState.streakInfo)
 
-            DailyTasksSection(
-                tasks = uiState.todayTasks,
-                inputText = uiState.taskInput,
-                canAddMore = uiState.canAddMoreTasks,
-                errorMessage = uiState.taskError,
-                onInputChange = viewModel::onTaskInputChange,
-                onAddTask = viewModel::addTask,
-                onToggleComplete = viewModel::toggleTaskComplete,
-            )
-        }
+        Spacer(modifier = Modifier.height(28.dp))
+
+        FixedTasksSection(
+            tasks = uiState.fixedTasks,
+            onCompleteTask = viewModel::completeTask,
+        )
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        OptionalTasksSection(
+            tasks = uiState.optionalTasks,
+            canAddMore = uiState.canAddMoreOptionalTasks,
+            onAddClick = viewModel::showAddOptionalDialog,
+            onCompleteTask = viewModel::completeTask,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }

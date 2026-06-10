@@ -22,29 +22,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.anchor.R
 import com.example.anchor.domain.model.NotificationTime
+import com.example.anchor.util.OemVendor
 
 /**
  * 通知权限与每日提醒设置卡片（极简风格）。
- *
- * @param isPermissionGranted 通知权限是否已授予
- * @param isNotificationEnabled 每日提醒是否已开启
- * @param notificationTime 用户设定的推送时刻
- * @param onEnableClick 点击开启提醒
- * @param onDisableClick 点击关闭提醒
- * @param onTimeChange 用户修改推送时刻
- * @param modifier 外部修饰符
  */
 @Composable
 fun NotificationPermissionCard(
     isPermissionGranted: Boolean,
+    canScheduleExactAlarms: Boolean,
+    isBatteryOptimizationIgnored: Boolean,
+    oemVendor: OemVendor,
+    isOemBackgroundConfirmed: Boolean,
+    awaitingOemConfirm: Boolean,
     isNotificationEnabled: Boolean,
     notificationTime: NotificationTime,
     onEnableClick: () -> Unit,
     onDisableClick: () -> Unit,
     onTimeChange: (hour: Int, minute: Int) -> Unit,
+    onOemBackgroundConfirm: () -> Unit,
+    onOpenOemSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showTimePicker by remember { mutableStateOf(false) }
+    val showOemGuide = oemVendor.needsBackgroundSetupGuide &&
+        (awaitingOemConfirm || (isNotificationEnabled && !isOemBackgroundConfirmed))
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -56,7 +58,6 @@ fun NotificationPermissionCard(
             color = MaterialTheme.colorScheme.onBackground,
         )
 
-        // 提醒时间设置行（始终可见，开启前也可预设）
         NotificationTimeRow(
             notificationTime = notificationTime,
             onClick = { showTimePicker = true },
@@ -88,6 +89,20 @@ fun NotificationPermissionCard(
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                 )
             }
+            if (!canScheduleExactAlarms) {
+                Text(
+                    text = stringResource(R.string.notification_exact_alarm_required),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                )
+            }
+            if (!isBatteryOptimizationIgnored) {
+                Text(
+                    text = stringResource(R.string.notification_battery_required),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                )
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -96,6 +111,27 @@ fun NotificationPermissionCard(
             ) {
                 OutlinedButton(onClick = onEnableClick) {
                     Text(text = stringResource(R.string.notification_enable_button))
+                }
+            }
+        }
+
+        if (showOemGuide) {
+            Text(
+                text = stringResource(oemVendor.guideStringRes()),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            )
+            Text(
+                text = stringResource(R.string.notification_oem_confirm_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onOpenOemSettings) {
+                    Text(text = stringResource(R.string.notification_oem_open_settings))
+                }
+                OutlinedButton(onClick = onOemBackgroundConfirm) {
+                    Text(text = stringResource(R.string.notification_oem_confirm_button))
                 }
             }
         }
@@ -111,9 +147,6 @@ fun NotificationPermissionCard(
     }
 }
 
-/**
- * 提醒时间展示行，点击弹出时间选择器。
- */
 @Composable
 private fun NotificationTimeRow(
     notificationTime: NotificationTime,

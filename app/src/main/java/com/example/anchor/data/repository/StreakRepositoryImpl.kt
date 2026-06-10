@@ -11,9 +11,7 @@ import java.time.format.DateTimeFormatter
 /**
  * 连续行动天数仓库实现。
  *
- * 规则：每天至少完成一件事即计为「行动」；
- * 若昨日有行动、今日也有行动，则连续天数 +1；
- * 若中断超过 1 天，则从 1 重新计数。
+ * 基于「全部固定任务完成」统计连续天数。
  */
 class StreakRepositoryImpl(
     private val userPreferencesDataStore: UserPreferencesDataStore,
@@ -28,24 +26,24 @@ class StreakRepositoryImpl(
 
     override suspend fun refreshDayBoundary() {
         val prefs = userPreferencesDataStore.getStreakPreferences()
-        if (isStreakBroken(prefs.lastActiveDate)) {
+        if (isStreakBroken(prefs.lastPerfectDate)) {
             userPreferencesDataStore.saveStreakPreferences(
                 currentStreak = 0,
                 longestStreak = prefs.longestStreak,
-                lastActiveDate = prefs.lastActiveDate,
+                lastPerfectDate = prefs.lastPerfectDate,
             )
         }
     }
 
-    override suspend fun markActionToday() {
+    override suspend fun onAllFixedTasksCompleted() {
         refreshDayBoundary()
 
         val today = todayString()
         val prefs = userPreferencesDataStore.getStreakPreferences()
-        if (prefs.lastActiveDate == today) return
+        if (prefs.lastPerfectDate == today) return
 
         val yesterday = LocalDate.now().minusDays(1).format(dateFormatter)
-        val newStreak = when (prefs.lastActiveDate) {
+        val newStreak = when (prefs.lastPerfectDate) {
             yesterday -> prefs.currentStreak + 1
             else -> 1
         }
@@ -54,15 +52,15 @@ class StreakRepositoryImpl(
         userPreferencesDataStore.saveStreakPreferences(
             currentStreak = newStreak,
             longestStreak = newLongest,
-            lastActiveDate = today,
+            lastPerfectDate = today,
         )
     }
 
     private fun toStreakInfo(prefs: UserPreferencesDataStore.StreakPreferences): StreakInfo {
         val today = LocalDate.now()
-        val lastActive = prefs.lastActiveDate?.let(LocalDate::parse)
+        val lastPerfect = prefs.lastPerfectDate?.let(LocalDate::parse)
 
-        if (lastActive == null) {
+        if (lastPerfect == null) {
             return StreakInfo(
                 currentStreak = 0,
                 longestStreak = prefs.longestStreak,
@@ -71,12 +69,12 @@ class StreakRepositoryImpl(
         }
 
         return when {
-            lastActive == today -> StreakInfo(
+            lastPerfect == today -> StreakInfo(
                 currentStreak = prefs.currentStreak,
                 longestStreak = prefs.longestStreak,
                 actionTakenToday = true,
             )
-            lastActive == today.minusDays(1) -> StreakInfo(
+            lastPerfect == today.minusDays(1) -> StreakInfo(
                 currentStreak = prefs.currentStreak,
                 longestStreak = prefs.longestStreak,
                 actionTakenToday = false,
@@ -89,9 +87,9 @@ class StreakRepositoryImpl(
         }
     }
 
-    private fun isStreakBroken(lastActiveDate: String?): Boolean {
-        val lastActive = lastActiveDate?.let(LocalDate::parse) ?: return false
-        return lastActive < LocalDate.now().minusDays(1)
+    private fun isStreakBroken(lastPerfectDate: String?): Boolean {
+        val lastPerfect = lastPerfectDate?.let(LocalDate::parse) ?: return false
+        return lastPerfect < LocalDate.now().minusDays(1)
     }
 
     private fun todayString(): String = LocalDate.now().format(dateFormatter)
