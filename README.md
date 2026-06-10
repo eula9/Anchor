@@ -11,6 +11,8 @@
 
 **仓库地址**：[github.com/eula9/Anchor](https://github.com/eula9/Anchor)
 
+**最新版本**：[v1.1 下载 APK](https://github.com/eula9/Anchor/releases/download/v1.1/Anchor.apk) · [Release 说明](https://github.com/eula9/Anchor/releases/tag/v1.1)
+
 ---
 
 ## 为什么叫 Anchor？
@@ -105,6 +107,10 @@ app/src/main/java/com/example/anchor/
 
 ## 快速开始
 
+### 直接安装（推荐）
+
+无需编译，下载 [v1.1 APK](https://github.com/eula9/Anchor/releases/download/v1.1/Anchor.apk) 安装即可。
+
 ### 克隆项目
 
 ```bash
@@ -141,7 +147,7 @@ Debug APK 输出路径：
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-> APK 为构建产物，已由 `.gitignore` 排除，不会提交到 Git。请在本地构建或自行下载 Release 包。
+> APK 为构建产物，已由 `.gitignore` 排除，不会提交到 Git。请从 [Releases](https://github.com/eula9/Anchor/releases) 下载，或本地执行 `assembleDebug` 构建。
 
 ---
 
@@ -207,6 +213,7 @@ app/build/outputs/apk/debug/app-debug.apk
 - [x] 固定 / 可选任务、连续行动、统计页
 - [x] AlarmManager 可靠通知 + 国产机后台引导
 - [x] 数据备份 v3、深色模式
+- [x] v1.1 Release 调试包
 - [ ] 应用截图与 Release 签名包
 
 ---
