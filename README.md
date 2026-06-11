@@ -11,7 +11,7 @@
 
 **仓库地址**：[github.com/eula9/Anchor](https://github.com/eula9/Anchor)
 
-**最新版本**：[v1.2 下载 APK](https://github.com/eula9/Anchor/releases/download/v1.2/Anchor-v1.2.apk) · [Release 说明](https://github.com/eula9/Anchor/releases/tag/v1.2)
+**最新版本**：[v1.2 下载 APK](https://github.com/eula9/Anchor/releases/download/v1.2/Anchor.apk) · [Release 说明](https://github.com/eula9/Anchor/releases/tag/v1.2)
 
 ---
 
@@ -117,7 +117,7 @@ app/src/main/java/com/example/anchor/
 
 ### 直接安装（推荐）
 
-无需编译，下载 [v1.2 APK](https://github.com/eula9/Anchor/releases/download/v1.2/Anchor-v1.2.apk) 安装即可。
+无需编译，下载 [v1.2 APK](https://github.com/eula9/Anchor/releases/download/v1.2/Anchor.apk) 安装即可。
 
 ### 克隆项目
 
