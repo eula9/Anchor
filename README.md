@@ -11,7 +11,7 @@
 
 **仓库地址**：[github.com/eula9/Anchor](https://github.com/eula9/Anchor)
 
-**最新版本**：[Releases 下载 APK](https://github.com/eula9/Anchor/releases)（当前 v1.2）
+**最新版本**：[v1.2 下载 APK](https://github.com/eula9/Anchor/releases/download/v1.2/Anchor-v1.2.apk) · [Release 说明](https://github.com/eula9/Anchor/releases/tag/v1.2)
 
 ---
 
@@ -117,7 +117,7 @@ app/src/main/java/com/example/anchor/
 
 ### 直接安装（推荐）
 
-无需编译，从 [Releases](https://github.com/eula9/Anchor/releases) 下载最新 APK 安装即可。
+无需编译，下载 [v1.2 APK](https://github.com/eula9/Anchor/releases/download/v1.2/Anchor-v1.2.apk) 安装即可。
 
 ### 克隆项目
 
@@ -222,7 +222,7 @@ app/build/outputs/apk/debug/app-debug.apk
 - [x] AlarmManager 可靠通知 + 国产机后台引导
 - [x] 数据备份 v3、深色模式
 - [x] v1.1 Release 调试包
-- [x] v1.2 明天想做的事 + 任务卡片 UI
+- [x] v1.2 Release 调试包
 - [ ] 应用截图与 Release 签名包
 
 ---
