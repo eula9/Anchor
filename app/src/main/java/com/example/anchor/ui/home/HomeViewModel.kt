@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.anchor.data.repository.EmptyTaskContentException
 import com.example.anchor.data.repository.TaskLimitReachedException
+import com.example.anchor.data.repository.TomorrowTaskLimitReachedException
 import com.example.anchor.domain.repository.IdentityRepository
 import com.example.anchor.domain.repository.StreakRepository
 import com.example.anchor.domain.repository.TaskRepository
@@ -35,6 +36,7 @@ class HomeViewModel(
         observeActiveAnchor()
         observeFixedTasks()
         observeOptionalTasks()
+        observeTomorrowTasks()
         observeStreakInfo()
     }
 
@@ -67,6 +69,54 @@ class HomeViewModel(
                         )
                     }
                 }
+                .onFailure { error ->
+                    _uiState.update { state ->
+                        state.copy(taskError = mapTaskError(error))
+                    }
+                }
+        }
+    }
+
+    fun showAddTomorrowDialog() {
+        _uiState.update {
+            it.copy(showTomorrowDialog = true, tomorrowDialogInput = "", taskError = null)
+        }
+    }
+
+    fun dismissTomorrowDialog() {
+        _uiState.update {
+            it.copy(showTomorrowDialog = false, tomorrowDialogInput = "", taskError = null)
+        }
+    }
+
+    fun onTomorrowDialogInputChange(text: String) {
+        _uiState.update { it.copy(tomorrowDialogInput = text, taskError = null) }
+    }
+
+    fun confirmAddTomorrowTask() {
+        val content = _uiState.value.tomorrowDialogInput
+        viewModelScope.launch {
+            taskRepository.addTomorrowTask(content)
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            showTomorrowDialog = false,
+                            tomorrowDialogInput = "",
+                            taskError = null,
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update { state ->
+                        state.copy(taskError = mapTaskError(error))
+                    }
+                }
+        }
+    }
+
+    fun moveTomorrowTaskToToday(taskId: Long) {
+        viewModelScope.launch {
+            taskRepository.moveTomorrowTaskToToday(taskId)
                 .onFailure { error ->
                     _uiState.update { state ->
                         state.copy(taskError = mapTaskError(error))
@@ -110,6 +160,14 @@ class HomeViewModel(
         }
     }
 
+    private fun observeTomorrowTasks() {
+        viewModelScope.launch {
+            taskRepository.tomorrowTasks.collect { tasks ->
+                _uiState.update { it.copy(tomorrowTasks = tasks) }
+            }
+        }
+    }
+
     private fun observeStreakInfo() {
         viewModelScope.launch {
             streakRepository.streakInfo.collect { streakInfo ->
@@ -121,6 +179,7 @@ class HomeViewModel(
     private fun mapTaskError(error: Throwable): String = when (error) {
         is EmptyTaskContentException -> "请输入任务内容"
         is TaskLimitReachedException -> "今日可选任务已满"
+        is TomorrowTaskLimitReachedException -> "明天想做的事已满"
         else -> "操作失败，请重试"
     }
 }

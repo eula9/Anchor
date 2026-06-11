@@ -7,7 +7,7 @@ package com.example.anchor.domain.model
  * @property content 任务内容
  * @property completed 是否已完成
  * @property date 任务所属日期（yyyy-MM-dd）
- * @property type 任务类型（固定 / 可选）
+ * @property type 任务类型（固定 / 可选 / 明天）
  * @property orderIndex 排序序号
  */
 data class Task(

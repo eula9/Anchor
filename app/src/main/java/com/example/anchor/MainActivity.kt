@@ -8,6 +8,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.example.anchor.ui.AnchorApp
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 应用主 Activity，作为 Compose UI 的宿主。
@@ -15,14 +16,20 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        val splashReady = AtomicBoolean(false)
+        val splashScreen = installSplashScreen()
+        splashScreen.setKeepOnScreenCondition { !splashReady.get() }
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         val appContainer = (application as AnchorApplication).appContainer
 
         setContent {
-            AnchorApp(appContainer = appContainer)
+            AnchorApp(
+                appContainer = appContainer,
+                onBootstrapComplete = { splashReady.set(true) },
+            )
         }
     }
 

@@ -28,14 +28,20 @@ class TaskRepositoryImpl(
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
-    override val todayFixedTasks: Flow<List<Task>> = observeTasksByType(TaskType.FIXED)
+    override val todayFixedTasks: Flow<List<Task>> = observeTasksByType(TaskType.FIXED, ::todayString)
 
-    override val todayOptionalTasks: Flow<List<Task>> = observeTasksByType(TaskType.OPTIONAL)
+    override val todayOptionalTasks: Flow<List<Task>> = observeTasksByType(TaskType.OPTIONAL, ::todayString)
+
+    override val tomorrowTasks: Flow<List<Task>> = observeTasksByType(TaskType.TOMORROW, ::tomorrowString)
 
     override suspend fun ensureTodayFixedTasks(templates: List<String>) {
         val today = todayString()
-        // 清理非今日任务：可选任务次日消失，固定任务每日重新生成
-        taskDao.deleteTasksNotOnDate(today)
+        val tomorrow = tomorrowString()
+
+        promoteTomorrowTasksForToday(today)
+        taskDao.deleteFixedTasksNotOnDate(today)
+        taskDao.deleteOptionalTasksNotOnDate(today)
+        taskDao.deleteTomorrowTasksBeforeDate(tomorrow)
 
         if (templates.isEmpty()) return
         val existingCount = taskDao.countTasksByDateAndType(today, TaskType.FIXED.dbValue)
@@ -90,6 +96,65 @@ class TaskRepositoryImpl(
         )
     }
 
+    override suspend fun addTomorrowTask(content: String): Result<Task> {
+        val trimmed = content.trim()
+        if (trimmed.isEmpty()) {
+            return Result.failure(EmptyTaskContentException())
+        }
+
+        val tomorrow = tomorrowString()
+        val count = taskDao.countTasksByDateAndType(tomorrow, TaskType.TOMORROW.dbValue)
+        if (count >= Constants.MAX_OPTIONAL_TASKS) {
+            return Result.failure(TomorrowTaskLimitReachedException())
+        }
+
+        val newId = taskDao.insertTask(
+            TaskEntity(
+                content = trimmed,
+                completed = false,
+                date = tomorrow,
+                type = TaskType.TOMORROW.dbValue,
+                orderIndex = count,
+            ),
+        )
+
+        return Result.success(
+            Task(
+                id = newId,
+                content = trimmed,
+                completed = false,
+                date = tomorrow,
+                type = TaskType.TOMORROW,
+                orderIndex = count,
+            ),
+        )
+    }
+
+    override suspend fun moveTomorrowTaskToToday(taskId: Long): Result<Unit> {
+        val today = todayString()
+        val optionalCount = taskDao.countTasksByDateAndType(today, TaskType.OPTIONAL.dbValue)
+        if (optionalCount >= Constants.MAX_OPTIONAL_TASKS) {
+            return Result.failure(TaskLimitReachedException())
+        }
+
+        val task = taskDao.getAllTasks().firstOrNull { it.id == taskId }
+            ?: return Result.failure(TaskNotFoundException())
+
+        if (task.type != TaskType.TOMORROW.dbValue || task.date != tomorrowString()) {
+            return Result.failure(InvalidTomorrowTaskException())
+        }
+
+        taskDao.updateTask(
+            task.copy(
+                type = TaskType.OPTIONAL.dbValue,
+                date = today,
+                orderIndex = optionalCount,
+            ),
+        )
+        syncTodayRecord()
+        return Result.success(Unit)
+    }
+
     override suspend fun completeTask(taskId: Long) {
         taskDao.completeTask(taskId)
         syncTodayRecord()
@@ -120,19 +185,49 @@ class TaskRepositoryImpl(
         )
     }
 
-    private fun observeTasksByType(type: TaskType): Flow<List<Task>> = flow {
-        emit(todayString())
-    }.flatMapLatest { today ->
-        taskDao.observeTasksByDateAndType(today, type.dbValue).map { entities ->
+    private suspend fun promoteTomorrowTasksForToday(today: String) {
+        val scheduled = taskDao.getTasksByDateAndType(today, TaskType.TOMORROW.dbValue)
+        if (scheduled.isEmpty()) return
+
+        var optionalCount = taskDao.countTasksByDateAndType(today, TaskType.OPTIONAL.dbValue)
+        scheduled.sortedBy { it.orderIndex }.forEach { task ->
+            if (optionalCount >= Constants.MAX_OPTIONAL_TASKS) return@forEach
+            taskDao.updateTask(
+                task.copy(
+                    type = TaskType.OPTIONAL.dbValue,
+                    orderIndex = optionalCount,
+                ),
+            )
+            optionalCount++
+        }
+        taskDao.deleteTasksByDateAndType(today, TaskType.TOMORROW.dbValue)
+        syncTodayRecord()
+    }
+
+    private fun observeTasksByType(type: TaskType, dateProvider: () -> String): Flow<List<Task>> = flow {
+        emit(dateProvider())
+    }.flatMapLatest { date ->
+        taskDao.observeTasksByDateAndType(date, type.dbValue).map { entities ->
             entities.map { it.toDomain() }
         }
     }
 
     private fun todayString(): String = LocalDate.now().format(dateFormatter)
+
+    private fun tomorrowString(): String = LocalDate.now().plusDays(1).format(dateFormatter)
 }
 
 /** 任务内容为空异常 */
 class EmptyTaskContentException : Exception("任务内容不能为空")
 
-/** 今日任务数量已达上限异常 */
+/** 今日可选任务数量已达上限异常 */
 class TaskLimitReachedException : Exception("今日可选任务已达上限")
+
+/** 明天想做的事数量已达上限异常 */
+class TomorrowTaskLimitReachedException : Exception("明天想做的事已满")
+
+/** 任务不存在异常 */
+class TaskNotFoundException : Exception("任务不存在")
+
+/** 无效的明天任务异常 */
+class InvalidTomorrowTaskException : Exception("无法移动该任务")

@@ -14,11 +14,20 @@ interface TaskRepository {
     /** 观察今日可选任务 */
     val todayOptionalTasks: Flow<List<Task>>
 
+    /** 观察明日想做的事（目标日为明天） */
+    val tomorrowTasks: Flow<List<Task>>
+
     /** 确保今日固定任务已从模板生成 */
     suspend fun ensureTodayFixedTasks(templates: List<String>)
 
     /** 添加可选任务 */
     suspend fun addOptionalTask(content: String): Result<Task>
+
+    /** 添加明天想做的事 */
+    suspend fun addTomorrowTask(content: String): Result<Task>
+
+    /** 将明天想做的事移入今日可选任务 */
+    suspend fun moveTomorrowTaskToToday(taskId: Long): Result<Unit>
 
     /** 标记任务为完成（不可撤销） */
     suspend fun completeTask(taskId: Long)

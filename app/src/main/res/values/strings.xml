@@ -44,17 +44,37 @@
 
     <!-- 固定任务 -->
     <string name="fixed_tasks_title">固定任务</string>
+    <string name="fixed_tasks_header_trailing">%1$d 固定任务</string>
+    <string name="fixed_task_tag">固定</string>
     <string name="fixed_tasks_empty">暂无固定任务</string>
 
     <!-- 可选任务 -->
     <string name="optional_tasks_title">可选任务</string>
+    <string name="optional_tasks_header_trailing">%1$d 可选任务</string>
     <string name="optional_tasks_quota">已完成 %1$d / 共 %2$d · 还可添加 %3$d 条</string>
+    <string name="optional_task_tag">可选</string>
+    <string name="task_date_today">今天</string>
+    <string name="task_date_tomorrow">明天</string>
+    <string name="swipe_action_complete">完成</string>
     <string name="optional_task_input_hint">输入想做的事…</string>
     <string name="optional_task_add_button">添加一件想做的事</string>
     <string name="optional_task_dialog_title">添加可选任务</string>
     <string name="optional_task_dialog_confirm">完成</string>
     <string name="optional_task_dialog_cancel">取消</string>
     <string name="optional_tasks_full">今日可选任务已满</string>
+
+    <!-- 明天想做的事 -->
+    <string name="tomorrow_tasks_title">明天想做的事</string>
+    <string name="tomorrow_tasks_header_trailing">全部</string>
+    <string name="tomorrow_tasks_quota">共 %1$d 条 · 还可添加 %2$d 条</string>
+    <string name="tomorrow_task_input_hint">输入明天想完成的事…</string>
+    <string name="tomorrow_task_add_button">添加明天想做的事</string>
+    <string name="tomorrow_task_dialog_title">添加明天想做的事</string>
+    <string name="tomorrow_task_dialog_description">次日打开应用时，将自动移入当日可选任务；也可提前移至今天。</string>
+    <string name="tomorrow_task_dialog_confirm">完成</string>
+    <string name="tomorrow_task_dialog_cancel">取消</string>
+    <string name="tomorrow_tasks_full">明天想做的事已满</string>
+    <string name="tomorrow_task_move_to_today">移至今天</string>
 
     <!-- 统计页 -->
     <string name="stats_title">统计</string>

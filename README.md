@@ -4,14 +4,14 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
-[![Version](https://img.shields.io/badge/version-1.1-blue.svg)](app/build.gradle.kts)
+[![Version](https://img.shields.io/badge/version-1.2-blue.svg)](app/build.gradle.kts)
 [![Min SDK](https://img.shields.io/badge/minSdk-26-orange.svg)](app/build.gradle.kts)
 
 **Anchor** 是一款极简风格的 Android 每日行动应用。通过「身份锚点」建立自我认同，用固定任务与可选任务驱动每日行动，辅以启动页激励语与可靠的后台提醒，让习惯可持续。
 
 **仓库地址**：[github.com/eula9/Anchor](https://github.com/eula9/Anchor)
 
-**最新版本**：[v1.1 下载 APK](https://github.com/eula9/Anchor/releases/download/v1.1/Anchor.apk) · [Release 说明](https://github.com/eula9/Anchor/releases/tag/v1.1)
+**最新版本**：[Releases 下载 APK](https://github.com/eula9/Anchor/releases)（当前 v1.2）
 
 ---
 
@@ -29,6 +29,7 @@
 | **身份锚点** | 自定义身份宣言（≤30 字）、周期 7/14/30 天或自定义 1~365 天 |
 | **固定任务** | 3~6 条每日必做任务，全部完成计连续行动天数 |
 | **可选任务** | 每天最多 3 条临时想做的事 |
+| **明天想做的事** | 提前记录明日计划，次日自动转入可选任务，可手动移至今天 |
 | **今日一句** | 内置 100 条激励语（现代励志为主），每天随机一条 |
 | **连续行动** | 完成全部固定任务延续连续记录，展示最长记录 |
 | **统计** | 行动率、连续天数、任务完成总数、近 7 日柱状图 |
@@ -37,6 +38,13 @@
 | **数据备份** | JSON 导出与导入（备份版本 v3） |
 
 ---
+
+## 版本更新（v1.2）
+
+- 新增「明天想做的事」（上限 3 条，次日自动变为可选任务）
+- 任务列表 UI 重构：卡片式布局、左滑露出操作、点击确认
+- 修复启动时短暂闪过设置页的问题
+- 添加任务改用底部弹窗
 
 ## 版本更新（v1.1）
 
@@ -76,8 +84,8 @@ docs/screenshots/
 
 | 配置项 | 值 |
 |--------|-----|
-| versionName | 1.1 |
-| versionCode | 2 |
+| versionName | 1.2 |
+| versionCode | 3 |
 | minSdk | 26（Android 8.0） |
 | targetSdk | 36 |
 | compileSdk | 36 |
@@ -109,7 +117,7 @@ app/src/main/java/com/example/anchor/
 
 ### 直接安装（推荐）
 
-无需编译，下载 [v1.1 APK](https://github.com/eula9/Anchor/releases/download/v1.1/Anchor.apk) 安装即可。
+无需编译，从 [Releases](https://github.com/eula9/Anchor/releases) 下载最新 APK 安装即可。
 
 ### 克隆项目
 
@@ -214,6 +222,7 @@ app/build/outputs/apk/debug/app-debug.apk
 - [x] AlarmManager 可靠通知 + 国产机后台引导
 - [x] 数据备份 v3、深色模式
 - [x] v1.1 Release 调试包
+- [x] v1.2 明天想做的事 + 任务卡片 UI
 - [ ] 应用截图与 Release 签名包
 
 ---

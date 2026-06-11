@@ -23,9 +23,10 @@ import com.example.anchor.ui.stats.StatsScreen
 fun AnchorNavGraph(
     navController: NavHostController,
     appContainer: AppContainer,
+    initialSetupComplete: Boolean,
 ) {
     val isSetupComplete by appContainer.identityRepository.isSetupComplete
-        .collectAsStateWithLifecycle(initialValue = false)
+        .collectAsStateWithLifecycle(initialValue = initialSetupComplete)
 
     val startDestination = if (isSetupComplete) Routes.Launch.route else Routes.Setup.route
     val navBackStackEntry by navController.currentBackStackEntryAsState()

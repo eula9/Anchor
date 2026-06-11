@@ -4,8 +4,6 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.anchor.AnchorApplication
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 /**
  * 每日数据维护 Worker。
@@ -19,9 +17,6 @@ class DailyMaintenanceWorker(
         return try {
             val container = (applicationContext as AnchorApplication).appContainer
             container.streakRepository.refreshDayBoundary()
-
-            val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-            container.database.taskDao().deleteTasksNotOnDate(today)
 
             val templates = container.userPreferencesDataStore.getAnchorPreferences().fixedTaskTemplates
             container.taskRepository.ensureTodayFixedTasks(templates)

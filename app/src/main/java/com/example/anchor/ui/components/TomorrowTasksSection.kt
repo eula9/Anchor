@@ -13,32 +13,36 @@ import com.example.anchor.R
 import com.example.anchor.domain.model.Task
 
 /**
- * 可选任务列表区域（图 1 卡片 + 左滑完成）。
+ * 明天想做的事列表区域（图 1 卡片 + 左滑移至今天）。
  */
 @Composable
-fun OptionalTasksSection(
+fun TomorrowTasksSection(
     tasks: List<Task>,
     canAddMore: Boolean,
+    canMoveToToday: Boolean,
     onAddClick: () -> Unit,
-    onCompleteTask: (taskId: Long) -> Unit,
+    onMoveToToday: (taskId: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = optionalTaskSectionColors()
+    val colors = tomorrowTaskSectionColors()
+
     Column(modifier = modifier.fillMaxWidth()) {
         TaskSectionHeader(
-            title = stringResource(R.string.optional_tasks_title),
-            trailingText = stringResource(R.string.optional_tasks_header_trailing, tasks.size),
+            title = stringResource(R.string.tomorrow_tasks_title),
+            trailingText = stringResource(R.string.tomorrow_tasks_header_trailing),
             colors = colors,
-            useDotAccent = false,
+            useDotAccent = true,
+            badgeCount = tasks.size.takeIf { it > 0 },
         )
 
         if (tasks.isNotEmpty()) {
             Column(modifier = Modifier.padding(top = 12.dp)) {
                 tasks.forEach { task ->
-                    SwipeableOptionalTaskCard(
+                    SwipeableTomorrowTaskCard(
                         task = task,
                         colors = colors,
-                        onComplete = onCompleteTask,
+                        canMoveToToday = canMoveToToday,
+                        onMoveToToday = onMoveToToday,
                     )
                 }
             }
@@ -46,12 +50,12 @@ fun OptionalTasksSection(
 
         if (canAddMore) {
             TaskAddPillButton(
-                text = stringResource(R.string.optional_task_add_button),
+                text = stringResource(R.string.tomorrow_task_add_button),
                 onClick = onAddClick,
             )
         } else {
             Text(
-                text = stringResource(R.string.optional_tasks_full),
+                text = stringResource(R.string.tomorrow_tasks_full),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 12.dp),

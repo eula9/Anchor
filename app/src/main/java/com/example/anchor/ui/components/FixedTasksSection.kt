@@ -3,7 +3,6 @@ package com.example.anchor.ui.components
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,7 +13,7 @@ import com.example.anchor.R
 import com.example.anchor.domain.model.Task
 
 /**
- * 固定任务列表区域。
+ * 固定任务列表区域（图 1 卡片 + 左滑完成）。
  */
 @Composable
 fun FixedTasksSection(
@@ -22,11 +21,14 @@ fun FixedTasksSection(
     onCompleteTask: (taskId: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = fixedTaskSectionColors()
+
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = stringResource(R.string.fixed_tasks_title),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+        TaskSectionHeader(
+            title = stringResource(R.string.fixed_tasks_title),
+            trailingText = stringResource(R.string.fixed_tasks_header_trailing, tasks.size),
+            colors = colors,
+            useDotAccent = false,
         )
 
         if (tasks.isEmpty()) {
@@ -39,16 +41,15 @@ fun FixedTasksSection(
             return
         }
 
-        HorizontalDivider(
-            modifier = Modifier.padding(top = 12.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-        )
-
-        tasks.forEach { task ->
-            TaskItemRow(
-                task = task,
-                onComplete = onCompleteTask,
-            )
+        Column(modifier = Modifier.padding(top = 12.dp)) {
+            tasks.forEach { task ->
+                SwipeableCheckboxTaskCard(
+                    task = task,
+                    colors = colors,
+                    tagText = stringResource(R.string.fixed_task_tag),
+                    onComplete = onCompleteTask,
+                )
+            }
         }
     }
 }

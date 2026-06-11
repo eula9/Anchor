@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 /**
  * 任务数据库实体。
  *
- * @property type 0 = 固定任务，1 = 可选任务
+ * @property type 0 = 固定任务，1 = 可选任务，2 = 明天想做的事
  */
 @Entity(
     tableName = "tasks",

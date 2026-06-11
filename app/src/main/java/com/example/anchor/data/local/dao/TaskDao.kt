@@ -23,6 +23,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks ORDER BY id ASC")
     suspend fun getAllTasks(): List<TaskEntity>
 
+    @Query("SELECT * FROM tasks WHERE date = :date AND type = :type ORDER BY orderIndex ASC, id ASC")
+    suspend fun getTasksByDateAndType(date: String, type: Int): List<TaskEntity>
+
     @Query("SELECT COUNT(*) FROM tasks WHERE date = :date AND type = :type")
     suspend fun countTasksByDateAndType(date: String, type: Int): Int
 
@@ -45,8 +48,14 @@ interface TaskDao {
     @Query("DELETE FROM tasks WHERE date != :today AND type = 1")
     suspend fun deleteOptionalTasksNotOnDate(today: String)
 
-    @Query("DELETE FROM tasks WHERE date != :today")
-    suspend fun deleteTasksNotOnDate(today: String)
+    @Query("DELETE FROM tasks WHERE date != :today AND type = 0")
+    suspend fun deleteFixedTasksNotOnDate(today: String)
+
+    @Query("DELETE FROM tasks WHERE type = 2 AND date < :date")
+    suspend fun deleteTomorrowTasksBeforeDate(date: String)
+
+    @Query("DELETE FROM tasks WHERE date = :date AND type = :type")
+    suspend fun deleteTasksByDateAndType(date: String, type: Int)
 
     @Query("DELETE FROM tasks")
     suspend fun deleteAllTasks()
